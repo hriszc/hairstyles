@@ -44,3 +44,36 @@
 - **性能**：全流程处理时间控制在 30–60s。
 - **隐私**：上传照片仅用于分析，不做持久化存储。
 - **扩展性**：发型库与服饰库可通过数据库扩展。
+
+## 7. 模型接入与调用
+- 基础信息：使用 OpenAI 兼容接口，Base URL 为 `https://api.ai-wave.org`。
+- 环境变量：在 Vercel 配置 `REPLICATE_API_KEYS`（本地放入 `.env.local`），仅在服务端使用，避免暴露到浏览器；支持多个 Key，以英文逗号 `,` 分隔。
+- 模型约定：
+  - 生文（Chat/Text）：`gemini-2.5-flash`
+  - 生图（Image）：`gemini-2.5-flash-image-preview`
+- Node/Next.js 示例（OpenAI SDK 兼容调用）：
+```ts
+import OpenAI from "openai";
+const keys = (process.env.REPLICATE_API_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+const apiKey = keys[Math.floor(Math.random() * Math.max(keys.length, 1))];
+const client = new OpenAI({ apiKey, baseURL: "https://api.ai-wave.org" });
+
+// 文本生成（聊天）
+const chat = await client.chat.completions.create({
+  model: "gemini-2.5-flash",
+  messages: [
+    { role: "system", content: "你是发型与服饰顾问" },
+    { role: "user", content: "根据椭圆脸给出发型与配色建议" },
+  ],
+});
+
+// 图片生成（示意图）
+const img = await client.images.generate({
+  model: "gemini-2.5-flash-image-preview",
+  prompt: "商务休闲风格短发示意图，上装简洁中性色",
+  size: "1024x1024",
+});
+```
